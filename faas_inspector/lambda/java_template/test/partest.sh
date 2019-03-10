@@ -321,7 +321,7 @@ stdevhost=`echo $total / ${#hosts[@]} | bc -l`
 #########################################################################################################################################################
 
 # CPU Types info
-echo "cputype,uses,totaltime,avgruntime_per_cpu"
+echo "cputype,uses,totaltime,avgruntime_per_cpu,hostcpuccount"
 total=0
 if [[ ! -z $vmreport && $vmreport -eq 1 ]]
 then
@@ -331,7 +331,16 @@ fi
 # Loop through CPU Types and make summary data
 for ((i=0;i < ${#cpuTypes[@]};i++)) {
   cpuavg=`echo ${cputimes[$i]} / ${cpuuses[$i]} | bc -l`
-  echo "${cpuTypes[$i]},${cpuuses[$i]},${cputimes[$i]},$cpuavg"
+
+  hostcpuccount=0
+  for ((j=0;j < ${#hosts[@]};j++)) {
+	if [ ${cpuTypes[$i]} == ${hcputype[$j]} ]
+	then
+		((hostcpuccount++))
+	fi
+  }
+
+  echo "${cpuTypes[$i]},${cpuuses[$i]},${cputimes[$i]},$cpuavg,$hostcpuccount"
 }
 	
 
