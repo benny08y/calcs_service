@@ -60,7 +60,7 @@ callservice() {
     ####################################
     # Uncomment for AWS Lambda CLI function invocation with $parfunction variable
     ####################################
-    output=`aws lambda invoke --invocation-type RequestResponse --function-name $parfunction --region us-east-1 --payload $json /dev/stdout | head -n 1 | head -c -2 ; echo`
+    output=`aws lambda invoke --invocation-type RequestResponse --function-name $parfunction --region us-west-2 --payload $json /dev/stdout | head -n 1 | head -c -2 ; echo`
 
     ####################################
     # Uncomment for CURL invocation with inline URL
@@ -180,6 +180,26 @@ do
         htimes+=($time)
         #hcontainers+=($uuid)
     fi
+
+    # Populate array of unique CPU types
+    cpufound=0
+    for ((i=0;i < ${#cpuTypes[@]};i++)) {
+
+        if [ "${cpuTypes[$i]}" == "${cputype}"  ]; then
+            (( cpuuses[$i]++ ))
+            cputimes[$i]=`expr ${cputimes[$i]} + $time`
+            cpufound=1
+        fi
+
+    }
+    if [ $cpufound != 1 ]; then
+        cpuTypes+=($cputype)
+        cpuuses+=(1)
+        cputimes+=($time)
+    fi
+
+
+
 done < "$filename"
 
 ##
@@ -295,6 +315,26 @@ for ((i=0;i < ${#hosts[@]};i++)) {
   fi
 }
 stdevhost=`echo $total / ${#hosts[@]} | bc -l`
+
+#########################################################################################################################################################
+# Generate CSV output - group by CPU Types
+#########################################################################################################################################################
+
+# CPU Types info
+echo "cputype,uses,totaltime,avgruntime_per_cpu"
+total=0
+if [[ ! -z $vmreport && $vmreport -eq 1 ]]
+then
+  rm -f .origvm 
+fi
+
+# Loop through CPU Types and make summary data
+for ((i=0;i < ${#cpuTypes[@]};i++)) {
+  cpuavg=`echo ${cputimes[$i]} / ${cpuuses[$i]} | bc -l`
+  echo "${cpuTypes[$i]},${cpuuses[$i]},${cputimes[$i]},$cpuavg"
+}
+	
+
 
 #########################################################################################################################################################
 # Generate CSV output - report summary, final data
